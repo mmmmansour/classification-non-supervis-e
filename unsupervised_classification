@@ -1,0 +1,25 @@
+var L8 = ee.ImageCollection("LANDSAT/LC08/C01/T1_TOA")
+.filterBounds(ROI)
+.filterDate('2019-01-01', '2019-03-20')
+.filterMetadata('CLOUD_COVER', 'less_than', 1)
+.mean()
+.clip(ROI)
+Map.addLayer( L8, {bands:['B7', 'B5', 'B3']});
+var training = L8.sample({
+  region:ROI,
+  scale: 30,
+  numPixels: 5000
+});
+var clusterer = ee.Clusterer.wekaKMeans(4).train(training);
+var unsupervised = L8.cluster(clusterer);
+Map.addLayer(unsupervised.randomVisualizer(), {}, 'clusters');
+
+
+
+Export.image.toDrive({
+image:unsupervised,
+description:'unsupervised',
+region:ROI,
+scale:30,
+maxPixels:1e9
+});
